@@ -201,7 +201,7 @@ public class ItemController {
         resposta.put("item", item.getNome());
         resposta.put("quantidade_total", item.getQuantidade());
         resposta.put("emprestado_para", usuariosComItem);
-        resposta.put("emprestimos_ativos", emprestimosAtivos.size());
+        resposta.put("empréstimos_ativos", emprestimosAtivos.size());
         resposta.put("disponivel", disponivel);
         resposta.put("mensagem", disponivel > 0 ?
                 "Item disponível para empréstimo" :
