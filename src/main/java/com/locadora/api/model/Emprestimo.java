@@ -38,11 +38,32 @@ public class Emprestimo {
     @Column(nullable = false)
     private Double multa = 0.0;
 
-    // Enum interno para status — mais seguro que String
     public enum StatusEmprestimo {
-        ACTIVE,      // Em andamento
-        RETURNED,    // Devolvido
-        LATE,        // Atrasado
-        BLOCKED      // Bloqueado por dívida
+
+        ACTIVE("ATIVO"),
+        RETURNED("DEVOLVIDO"),
+        LATE("ATRASADO"),
+        BLOCKED("BLOQUEADO");
+
+        private final String label;
+
+        StatusEmprestimo(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        // Permite converter "DEVOLVIDO" -> RETURNED
+        public static StatusEmprestimo fromLabel(String label) {
+            for (StatusEmprestimo s : values()) {
+                if (s.label.equalsIgnoreCase(label)) {
+                    return s;
+                }
+            }
+            // Caso o request venha com texto inválido
+            throw new IllegalArgumentException("Status inválido: " + label);
+        }
     }
 }

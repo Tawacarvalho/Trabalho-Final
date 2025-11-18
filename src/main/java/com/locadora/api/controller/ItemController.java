@@ -78,7 +78,6 @@ public class ItemController {
             return ResponseEntity.badRequest().body(resposta);
         }
 
-        // Garante emprestados não nulo
         if (item.getEmprestados() == null) {
             item.setEmprestados(0);
         }
@@ -92,7 +91,7 @@ public class ItemController {
         return ResponseEntity.created(uri).body(salvo);
     }
 
-    // ATUALIZAR ITEM (bloqueando alteração de emprestados)
+    // ATUALIZAR ITEM
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizar(@PathVariable("id") Long id, @RequestBody Item novoItem) {
         Optional<Item> existente = itemRepository.findById(id);
@@ -104,7 +103,6 @@ public class ItemController {
 
         List<String> erros = new ArrayList<>();
 
-        // Impede alteração manual do campo "emprestados"
         if (novoItem.getEmprestados() != null &&
                 !novoItem.getEmprestados().equals(existente.get().getEmprestados())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -138,7 +136,6 @@ public class ItemController {
         item.setDescricao(novoItem.getDescricao());
         item.setCategoria(novoItem.getCategoria());
         item.setQuantidade(novoItem.getQuantidade());
-        // emprestados não pode ser alterado manualmente
 
         itemRepository.save(item);
         return ResponseEntity.ok(item);
@@ -172,7 +169,7 @@ public class ItemController {
                 .body("Item '" + item.getNome() + "' excluído com sucesso.");
     }
 
-    // DISPONIBILIDADE + PARA QUEM O ITEM ESTÁ EMPRESTADO
+    // DISPONIBILIDADE + PARA QUEM ESTÁ EMPRESTADO
     @GetMapping("/{id}/disponibilidade")
     public ResponseEntity<?> verificarDisponibilidade(@PathVariable("id") Long id) {
         Optional<Item> itemOpt = itemRepository.findById(id);
@@ -188,12 +185,12 @@ public class ItemController {
 
         List<Emprestimo> emprestimosAtivos = emprestimoRepository.findByItemId(id)
                 .stream()
-                .filter(e -> "ATIVO".equalsIgnoreCase(e.getStatus()))
-                .toList();
+                .filter(e -> e.getStatus() == Emprestimo.StatusEmprestimo.ACTIVE)
+                .collect(Collectors.toList());
 
         List<String> usuariosComItem = emprestimosAtivos.stream()
                 .map(e -> e.getUsuario().getNome())
-                .toList();
+                .collect(Collectors.toList());
 
         int disponivel = item.getQuantidade() - item.getEmprestados();
 
@@ -215,7 +212,9 @@ public class ItemController {
     public ResponseEntity<?> listarDisponibilidadeGeral() {
 
         List<Item> itens = itemRepository.findAll();
-        List<Emprestimo> emprestimosAtivos = emprestimoRepository.findByStatus("ATIVO");
+
+        List<Emprestimo> emprestimosAtivos =
+                emprestimoRepository.findByStatus(Emprestimo.StatusEmprestimo.ACTIVE);
 
         Map<Long, Integer> emprestadosPorItem = emprestimosAtivos.stream()
                 .collect(Collectors.groupingBy(
@@ -229,13 +228,14 @@ public class ItemController {
             int emprestados = emprestadosPorItem.getOrDefault(item.getId(), 0);
             int disponivel = item.getQuantidade() - emprestados;
 
-            resposta.add(Map.of(
-                    "id", item.getId(),
-                    "item", item.getNome(),
-                    "quantidade_total", item.getQuantidade(),
-                    "emprestados", emprestados,
-                    "disponivel", disponivel
-            ));
+            Map<String, Object> dados = new LinkedHashMap<>();
+            dados.put("id", item.getId());
+            dados.put("item", item.getNome());
+            dados.put("quantidade_total", item.getQuantidade());
+            dados.put("emprestados", emprestados);
+            dados.put("disponivel", disponivel);
+
+            resposta.add(dados);
         }
 
         return ResponseEntity.ok(resposta);

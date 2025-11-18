@@ -22,7 +22,7 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     List<Emprestimo> findByUsuarioIdAndStatus(Long usuarioId, String status);
 
     // 🔹 Busca todos os empréstimos ativos (caso exista controle de status)
-    List<Emprestimo> findByStatus(String status);
+    List<Emprestimo> findByStatus(Emprestimo.StatusEmprestimo status);
 
     // 🔹 Novo método — busca empréstimos onde a multa é maior que um valor
     //    (usado para impedir exclusão ou PUT quando há dívidas)

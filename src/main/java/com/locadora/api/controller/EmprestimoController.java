@@ -58,7 +58,7 @@ public class EmprestimoController {
 
         Map<String, Object> response = new HashMap<String, Object>();
         response.put("id", emprestimo.getId());
-        response.put("status", emprestimo.getStatus());
+        response.put("status", emprestimo.getStatus().getLabel());
         response.put("multa", emprestimo.getMulta());
         response.put("dataEmprestimo", emprestimo.getDataEmprestimo());
         response.put("dataPrevistaDevolucao", emprestimo.getDataPrevistaDevolucao());
