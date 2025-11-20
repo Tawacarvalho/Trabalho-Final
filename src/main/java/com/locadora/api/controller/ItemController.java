@@ -53,8 +53,11 @@ public class ItemController {
     }
 
     // CRIAR NOVO ITEM
+    // CRIAR NOVO ITEM
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody Item item) {
+    public ResponseEntity<?> criarItem(@RequestBody Item item) {
+
+        // 🔴 VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS
         List<String> erros = new ArrayList<>();
 
         if (item.getNome() == null || item.getNome().trim().isEmpty()) {
@@ -71,24 +74,22 @@ public class ItemController {
         }
 
         if (!erros.isEmpty()) {
-            Map<String, Object> resposta = new LinkedHashMap<>();
-            resposta.put("status", "erro");
-            resposta.put("mensagem", "Campos obrigatórios não preenchidos.");
-            resposta.put("detalhes", erros);
-            return ResponseEntity.badRequest().body(resposta);
+            Map<String, Object> respostaErro = new HashMap<>();
+            respostaErro.put("status", "erro");
+            respostaErro.put("mensagem", "Campos obrigatórios não preenchidos.");
+            respostaErro.put("detalhes", erros);
+            return ResponseEntity.badRequest().body(respostaErro);
         }
 
-        if (item.getEmprestados() == null) {
-            item.setEmprestados(0);
-        }
+        // Aqui você provavelmente deve salvar o item:
+        itemRepository.save(item);
 
-        Item salvo = itemRepository.save(item);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(salvo.getId())
+                .buildAndExpand(item.getId())
                 .toUri();
 
-        return ResponseEntity.created(uri).body(salvo);
+        return ResponseEntity.created(uri).body(item);
     }
 
     // ATUALIZAR ITEM

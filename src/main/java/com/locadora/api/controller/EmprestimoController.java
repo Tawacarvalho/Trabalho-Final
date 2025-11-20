@@ -42,10 +42,21 @@ public class EmprestimoController {
     }
 
     @PostMapping("/{id}/renovar")
-    public Emprestimo renovar(@PathVariable("id") Long id,
-                              @RequestParam(value = "diasExtra", required = false) Integer diasExtra) {
-        return service.renovar(id, diasExtra);
+    public Map<String, Object> renovar(@PathVariable("id") Long id,
+                                       @RequestParam(value = "diasExtra", required = false) Integer diasExtra) {
+
+        Emprestimo emprestimo = service.renovar(id, diasExtra);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", emprestimo.getId());
+        response.put("status", emprestimo.getStatus().name());
+        response.put("renovacoes", emprestimo.getRenovacoes());
+        response.put("novaDataPrevistaDevolucao", emprestimo.getDataPrevistaDevolucao());
+        response.put("mensagem", "Renovação realizada com sucesso.");
+
+        return response;
     }
+
 
     @GetMapping("/dividas/{usuarioId}")
     public List<Emprestimo> consultarDividas(@PathVariable("usuarioId") Long usuarioId) {
