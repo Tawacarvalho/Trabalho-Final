@@ -78,9 +78,16 @@ public class EmprestimoService {
         Emprestimo emprestimo = emprestimoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empréstimo não encontrado."));
 
-        if (emprestimo.getStatus() != StatusEmprestimo.ACTIVE &&
-                emprestimo.getStatus() != StatusEmprestimo.LATE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Empréstimo já devolvido ou inválido.");
+        // 🔒 NOVA REGRA: impede devolução duplicada
+        if (emprestimo.getStatus() == StatusEmprestimo.RETURNED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Este empréstimo já foi devolvido anteriormente.");
+        }
+
+        // 🔒 Caso já exista data de devolução, bloqueia também
+        if (emprestimo.getDataDevolucao() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Devolução já registrada anteriormente.");
         }
 
         Item item = emprestimo.getItem();
@@ -90,11 +97,13 @@ public class EmprestimoService {
         LocalDate hoje = LocalDate.now();
         emprestimo.setDataDevolucao(hoje);
 
-        // ✅ Cálculo seguro de atraso (não retorna valor negativo)
-        long diasAtraso = Math.max(0, ChronoUnit.DAYS.between(emprestimo.getDataPrevistaDevolucao(), hoje));
+        // Cálculo de atraso está correto
+        long diasAtraso = Math.max(0,
+                ChronoUnit.DAYS.between(emprestimo.getDataPrevistaDevolucao(), hoje)
+        );
+
         Usuario usuario = emprestimo.getUsuario();
 
-        // 🔸 Calcula multa se houver atraso
         if (diasAtraso > 0) {
             double multa = diasAtraso * 2.50;
             emprestimo.setMulta(multa);
@@ -127,12 +136,14 @@ public class EmprestimoService {
 
         // 🔒 Bloqueia se houver dívida
         if (usuario.getDivida() != null && usuario.getDivida().doubleValue() > 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário com dívida pendente — renovação bloqueada.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Usuário com dívida pendente — renovação bloqueada.");
         }
 
-        // 🔒 Bloqueia se atingiu o limite de renovações
+        // 🔒 Limite de renovações
         if (emprestimo.getRenovacoes() >= 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Limite máximo de 2 renovações atingido — devolução obrigatória.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Limite máximo de 2 renovações atingido — devolução obrigatória.");
         }
 
         emprestimo.setDataPrevistaDevolucao(

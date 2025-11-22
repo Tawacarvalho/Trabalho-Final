@@ -1,5 +1,5 @@
 //SUBIR OS COMMITS
 
 git add .
-git commit -m "Mensagem de retorno ao renovar um emprestimo"
+git commit -m "Consulta dividas de usuários"
 git push
