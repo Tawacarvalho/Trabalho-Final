@@ -18,18 +18,21 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     // 🔹 Busca todos os empréstimos associados a um item específico
     List<Emprestimo> findByItemId(Long itemId);
 
-    // 🔹 Busca empréstimos de um usuário com status único (se necessário)
+    // 🔹 Busca empréstimos de um usuário com status único
     List<Emprestimo> findByUsuarioIdAndStatus(Long usuarioId, String status);
 
-    // 🔹 Busca todos os empréstimos ativos (caso exista controle de status)
+    // 🔹 Busca todos os empréstimos por status enum
     List<Emprestimo> findByStatus(Emprestimo.StatusEmprestimo status);
 
-    // 🔹 Novo método — busca empréstimos onde a multa é maior que um valor
-    //    (usado para impedir exclusão ou PUT quando há dívidas)
+    // 🔹 Buscar empréstimos com multa > 0 para impedir exclusão/PUT
     List<Emprestimo> findByUsuarioIdAndMultaGreaterThan(Long usuarioId, double valor);
 
-    // Buscar empréstimos com multa > 0
+    // 🔹 Buscar empréstimos com multa > 0
     List<Emprestimo> findByMultaGreaterThan(Double multa);
 
+    // 🔹 Correção: mantido apenas UMA versão compatível com o service
     List<Emprestimo> findByUsuarioIdAndMultaGreaterThan(Long usuarioId, Double multa);
+
+    // 🔹 Novo método necessário para o UsuarioService
+    List<Emprestimo> findByUsuarioId(Long usuarioId);
 }

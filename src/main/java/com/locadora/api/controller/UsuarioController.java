@@ -12,12 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -30,15 +25,15 @@ public class UsuarioController {
     private EmprestimoRepository emprestimoRepository;
 
     @Autowired
-    private UsuarioService usuarioService; // ✅ CORREÇÃO — agora existe
+    private UsuarioService usuarioService;
 
-    // Listar todos os usuários
+    // Listar todos
     @GetMapping
     public List<Usuario> listar() {
         return usuarioRepository.findAll();
     }
 
-    // Buscar usuário por ID
+    // Buscar por ID
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id) {
         Optional<Usuario> usuario = usuarioRepository.findById(id);
@@ -46,13 +41,12 @@ public class UsuarioController {
         if (usuario.isPresent()) {
             return ResponseEntity.ok(usuario.get());
         } else {
-            Map<String, String> erro = new HashMap<String, String>();
-            erro.put("erro", "Usuário não encontrado");
-            return ResponseEntity.status(404).body(erro);
+            return ResponseEntity.status(404)
+                    .body(Collections.singletonMap("erro", "Usuário não encontrado"));
         }
     }
 
-    // Criar usuário (com validação detalhada de campos obrigatórios)
+    // Criar usuário
     @PostMapping
     public ResponseEntity<?> criar(@RequestBody Usuario usuario) {
 
@@ -77,16 +71,16 @@ public class UsuarioController {
         if (!camposInvalidos.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Collections.singletonMap("erro",
-                            "Campos obrigatórios ausentes ou inválidos: " + String.join(", ", camposInvalidos)));
+                            "Campos obrigatórios inválidos: " + String.join(", ", camposInvalidos)));
         }
 
         Usuario salvo = usuarioRepository.save(usuario);
         return new ResponseEntity<>(salvo, HttpStatus.CREATED);
     }
 
-    // 🔧 QUITAR TODAS AS DÍVIDAS (via UsuarioService)
+    // QUITAR TODAS AS DÍVIDAS (via service)
     @PostMapping("/{id}/quitar-dividas")
-    public ResponseEntity<?> quitarDividas(@PathVariable Long id) {
+    public ResponseEntity<?> quitarDividas(@PathVariable("id") Long id) {
         boolean quitou = usuarioService.quitarDividas(id);
 
         if (!quitou) {
@@ -112,8 +106,9 @@ public class UsuarioController {
 
         if (usuarioAtualizado.getDivida() != null &&
                 !usuarioAtualizado.getDivida().equals(usuario.getDivida())) {
+
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Campo 'divida' não pode ser alterado manualmente. Faça o pagamento e evite multas maiores.");
+                    .body("Campo 'divida' não pode ser alterado manualmente.");
         }
 
         usuario.setNome(usuarioAtualizado.getNome());
@@ -131,32 +126,30 @@ public class UsuarioController {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
 
         if (!usuarioOpt.isPresent()) {
-            Map<String, String> erro = new HashMap<>();
-            erro.put("erro", "Usuário não encontrado");
-            return ResponseEntity.status(404).body(erro);
+            return ResponseEntity.status(404)
+                    .body(Collections.singletonMap("erro", "Usuário não encontrado"));
         }
 
         Usuario usuario = usuarioOpt.get();
 
         if (usuario.getDivida() != null && usuario.getDivida().compareTo(BigDecimal.ZERO) > 0) {
-            Map<String, String> erro = new HashMap<>();
-            erro.put("erro", "Usuário não pode ser excluído enquanto possuir dívidas pendentes.");
-            return ResponseEntity.status(400).body(erro);
+            return ResponseEntity.status(400)
+                    .body(Collections.singletonMap("erro", "Usuário não pode ser excluído com dívidas."));
         }
 
         usuarioRepository.deleteById(id);
 
-        String mensagem = "Usuário (" + usuario.getId() + " - " + usuario.getNome() + ") excluído com sucesso.";
-        Map<String, String> resposta = new HashMap<>();
-        resposta.put("mensagem", mensagem);
-
-        return ResponseEntity.status(200).body(resposta);
+        return ResponseEntity.ok(Collections.singletonMap(
+                "mensagem",
+                "Usuário (" + usuario.getId() + " - " + usuario.getNome() + ") excluído com sucesso."
+        ));
     }
 
-    // Quitar dívida única (campo divida do usuário)
+    // Quitar dívida simples (zerar campo divida)
     @PostMapping("/{id}/quitar")
     public ResponseEntity<?> quitarDivida(@PathVariable("id") Long id) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
+
         if (!usuarioOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Collections.singletonMap("erro", "Usuário não encontrado."));
@@ -166,16 +159,18 @@ public class UsuarioController {
         usuario.setDivida(BigDecimal.ZERO);
         usuarioRepository.save(usuario);
 
-        return ResponseEntity.ok(Collections.singletonMap("mensagem",
-                "Dívida quitada com sucesso para o usuário: " + usuario.getNome()));
+        return ResponseEntity.ok(Collections.singletonMap(
+                "mensagem",
+                "Dívida quitada para o usuário: " + usuario.getNome()
+        ));
     }
 
-    // 🔎 LISTAR TODAS AS DÍVIDAS ATIVAS (usando ID do empréstimo)
+    // LISTAR TODAS AS DÍVIDAS ATIVAS
     @GetMapping("/dividas")
     public ResponseEntity<?> listarDividasAtivas() {
 
-        List<Emprestimo> emprestimosComMulta =
-                emprestimoRepository.findByMultaGreaterThan(0.0);
+        // ⚠️ Esse método PRECISA EXISTIR NO EmprestimoRepository
+        List<Emprestimo> emprestimosComMulta = emprestimoRepository.findByMultaGreaterThan(0.0);
 
         List<Map<String, Object>> resposta = new ArrayList<>();
 
