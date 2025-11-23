@@ -31,4 +31,5 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     // Buscar empréstimos com multa > 0
     List<Emprestimo> findByMultaGreaterThan(Double multa);
 
+    List<Emprestimo> findByUsuarioIdAndMultaGreaterThan(Long usuarioId, Double multa);
 }

@@ -4,6 +4,8 @@ import com.locadora.api.model.Usuario;
 import com.locadora.api.model.Emprestimo;
 import com.locadora.api.repository.UsuarioRepository;
 import com.locadora.api.repository.EmprestimoRepository;
+import com.locadora.api.service.UsuarioService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,9 @@ public class UsuarioController {
 
     @Autowired
     private EmprestimoRepository emprestimoRepository;
+
+    @Autowired
+    private UsuarioService usuarioService; // ✅ CORREÇÃO — agora existe
 
     // Listar todos os usuários
     @GetMapping
@@ -77,6 +82,19 @@ public class UsuarioController {
 
         Usuario salvo = usuarioRepository.save(usuario);
         return new ResponseEntity<>(salvo, HttpStatus.CREATED);
+    }
+
+    // 🔧 QUITAR TODAS AS DÍVIDAS (via UsuarioService)
+    @PostMapping("/{id}/quitar-dividas")
+    public ResponseEntity<?> quitarDividas(@PathVariable Long id) {
+        boolean quitou = usuarioService.quitarDividas(id);
+
+        if (!quitou) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Usuário não encontrado ou não possui dívidas.");
+        }
+
+        return ResponseEntity.ok("Dívidas quitadas com sucesso!");
     }
 
     // Atualizar usuário
@@ -135,7 +153,7 @@ public class UsuarioController {
         return ResponseEntity.status(200).body(resposta);
     }
 
-    // Quitar dívida de usuário
+    // Quitar dívida única (campo divida do usuário)
     @PostMapping("/{id}/quitar")
     public ResponseEntity<?> quitarDivida(@PathVariable("id") Long id) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
@@ -152,7 +170,7 @@ public class UsuarioController {
                 "Dívida quitada com sucesso para o usuário: " + usuario.getNome()));
     }
 
-    // 🔎 NOVO ENDPOINT — Consultar todas as dívidas (usando ID do empréstimo como identificador)
+    // 🔎 LISTAR TODAS AS DÍVIDAS ATIVAS (usando ID do empréstimo)
     @GetMapping("/dividas")
     public ResponseEntity<?> listarDividasAtivas() {
 
